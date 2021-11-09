@@ -30,7 +30,7 @@ if (args['--help']) {
 
 const { _: dirs = [] } = args;
 
-if (dirs.length < 2) { 
+if (dirs.length < 2) {
     return console.error('请指定输出文件：', dirs);
 }
 
@@ -38,8 +38,16 @@ const target = path.resolve(process.cwd(), dirs.pop());
 
 const extensions = ['.toml', '.md'];
 
+const JSON_EXT = '.json';
+
 const ignore = (file) => {
     return extensions.includes(path.extname(file));
+};
+
+const matterOptions = {
+    engines: {
+        toml: toml.parse.bind(toml),
+    }
 };
 
 const tree = { files: {}, items: [] };
@@ -55,33 +63,47 @@ dirs.forEach(dir => {
             debug && console.log('读取数据文件出错：', file);
             throw text;
         }
+        const location = path.relative(process.cwd(), file);
         switch (path.extname(file)) {
             case '.md':
-                const { data, content, ...extra } = matter(text.toString(), {
-                    engines: {
-                        toml: toml.parse.bind(toml),
-                    }
-                });
+                const { data, content, ...extra } = matter(text.toString(), matterOptions);
                 tree.items.push({
                     ...data,
                     ...extra,
-                    filename: file,
+                    __type: 'markdown',
+                    __path: location,
                     content: content.trim(),
                 });
                 break;
             case '.toml':
-                Object.assign(tree, toml.parse(text.toString()));
+                tree.items.push({
+                    __type: 'toml',
+                    __path: location,
+                    ...toml.parse(text.toString()),
+                });
                 break;
             default:
-                console.log('other', file);
+                tree.items.push({
+                    __type: 'other',
+                    __path: location,
+                    content: text.toString(),
+                });
                 break;
         }
     });
 });
 
-fs.mkdirSync(path.dirname(target), { recursive: true });
-debug && console.log(`output path created: ${target}\n`);
+if (!fs.existsSync(target) && path.extname(target) !== JSON_EXT) {
+    if (path.extname(target) === JSON_EXT) {
+        const parent = path.dirname(target);
+        fs.mkdirSync(parent, { recursive: true });
+        debug && console.log(`output path created: ${parent}\n`);
+    } else {
+        fs.mkdirSync(target, { recursive: true });
+        debug && console.log(`output path created: ${target}\n`);
+    }
+}
 
-const temp = (fs.lstatSync(target).isDirectory()) ? path.resolve(target, 'merged.json') : target;
+const temp = (path.extname(target) === JSON_EXT) ? target : path.resolve(target, 'merged.json');
 
 rw.writeFileSync(temp, JSON.stringify(tree, null, 4));

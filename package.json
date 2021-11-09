@@ -4,7 +4,7 @@
   "description": "CLI program that reads markdown/toml and prints it as JSON.",
   "main": "index.js",
   "scripts": {
-    "test": "node src/index.js test/source/ node_modules/ test/target/"
+    "test": "node src/index.js test/source/ node_modules/ test/target/a/x"
   },
   "repository": {
     "type": "git",
