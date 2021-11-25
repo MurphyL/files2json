@@ -1,13 +1,14 @@
 {
   "name": "@murphyl/files2json",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "CLI program that reads markdown/toml and prints it as JSON.",
   "main": "index.js",
   "bin": {
     "files2json": "./src/index.js"
   },
   "scripts": {
-    "test": "node src/index.js test/source/ node_modules/ test/target/a/x --out test/output/a.json"
+    "test": "node src/index.js package.json test/source/ node_modules/ test/target/a/x --out test/target/a.json",
+    "markdown": "node src/index.js test/source/markdown/b.md"
   },
   "repository": {
     "type": "git",

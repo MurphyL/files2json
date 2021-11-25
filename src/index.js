@@ -36,6 +36,7 @@ if (files.length === 0) {
 }
 
 const matterOptions = {
+    language: 'toml',
     engines: {
         toml: toml.parse.bind(toml),
     }
@@ -44,28 +45,33 @@ const matterOptions = {
 const out = args['--out'];
 
 const readFile = (filepath) => {
-    const text = fs.readFileSync(filepath);
     switch (path.extname(filepath)) {
         case '.md':
-            const { data, content, ...extra } = matter(text.toString(), matterOptions);
+            const { data, content, ...extra } = matter.read(filepath, matterOptions);
             return {
                 ...data,
                 ...extra,
                 __type: 'markdown',
-                __path: filepath,
+                __unique: path.basename(filepath),
                 content: content.trim(),
             };
         case '.toml':
             return {
                 __type: 'toml',
-                __path: filepath,
-                ...toml.parse(text.toString()),
+                __unique: path.basename(filepath),
+                ...toml.parse(fs.readFileSync(filepath).toString()),
+            };
+        case '.json':
+            return {
+                __type: 'json',
+                __unique: path.basename(filepath),
+                ...JSON.parse(fs.readFileSync(filepath).toString()),
             };
         default:
             return {
                 __type: 'other',
-                __path: filepath,
-                content: text.toString(),
+                __unique: path.basename(filepath),
+                content: fs.readFileSync(filepath).toString(),
             };
     }
 };
@@ -74,19 +80,22 @@ const readFiles = (files = []) => {
     const temp = {};
     files.forEach(file => {
         const target = path.resolve(process.cwd(), file);
-        if (!temp[file]) { 
-            temp[file] = [];
-        }
         if (!fs.existsSync(target)) {
             return console.warn('Path not exists:', target);
         }
-        if (fs.lstatSync(target).isDirectory()) {
-            const items = recursive(target);
-            items.forEach(item => {
-                temp[file].push(readFile(item));
-            });
-        } else if (fs.lstatSync(target).isFile()) {
-            temp[file].push(readFile(target));
+        const stat = fs.lstatSync(target);
+        if (stat.isDirectory()) {
+            temp[file] = [];
+            if (fs.lstatSync(target).isDirectory()) {
+                const items = recursive(target);
+                items.forEach(item => {
+                    temp[file].push(readFile(item));
+                });
+            } else if (fs.lstatSync(target).isFile()) {
+                temp[file].push(readFile(target));
+            }
+        } else if (stat.isFile()) {
+            temp[file] = readFile(target);
         }
     });
     return temp;
@@ -98,5 +107,5 @@ if (out) {
     const target = path.resolve(process.cwd(), out);
     fs.writeFileSync(target, JSON.stringify(output, null, 2));
 } else {
-    debug && console.log(output);
+    console.log(output);
 }
