@@ -1,8 +1,10 @@
 # files2json
 
-> CLI program that reads json/markdown/toml/yaml and prints it as JSON.
+CLI program that reads json/markdown/toml/yaml and prints it as JSON.
 
-## Arguments
+> files2json [...options] [...paths]
+
+## Options
 
 - `--out`, `-o`: output file
 - `--matter`: markdown front matter

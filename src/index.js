@@ -11,7 +11,6 @@ import { csvParse, tsvParse } from 'd3-dsv';
 import stripBOM from 'strip-bom-string';
 import stripJSON from 'strip-json-comments';
 import recursiveReaddirSync from 'recursive-readdir-sync';
-import { exit } from 'process';
 
 const exts = ['toml', 'yml', 'yaml', 'json'];
 
@@ -33,13 +32,17 @@ const args = arg({
 });
 
 if (args['--help']) {
-    const text = fs.readFileSync(path.resolve(process.cwd(), 'src/doc.txt'));
-    console.log(text.toString());
+    console.log(fs.readFileSync('./README.md').toString());
     process.exit(0);
 }
 
 if (args['--version']) {
-    console.log('show version');
+    const { name, description, version, bin } = parseJSON(fs.readFileSync('./package.json').toString());
+    Object.entries(bin).forEach(([sh]) => {
+        console.log(`${sh} ${version}`)
+    });
+    console.log(name);
+    console.log(description);
     process.exit(0);
 }
 
@@ -104,7 +107,7 @@ const writeFile = (target, data) => {
         // 若输出目标是已存在的文件，则先删除
         if (stat.isFile()) {
             fs.rmSync(target);
-        } 
+        }
         // 若输出目标是目录，则直接报错
         else if (stat.isDirectory()) {
             throw new Error('output file must not directory:' + target);

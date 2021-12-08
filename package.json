@@ -8,6 +8,8 @@
     "files2json": "./src/index.js"
   },
   "scripts": {
+    "help": "node src/index.js --help",
+    "version": "node src/index.js --version",
     "test": "node src/index.js --matter=toml package.json test/source/ node_modules/ --out test/target/a",
     "test1": "node src/index.js --matter=toml package.json test/source/ node_modules/",
     "test2": "node src/index.js -vp --matter=toml package.json test/source/ node_modules/ --out test/target/c.json",
