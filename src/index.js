@@ -55,7 +55,7 @@ const matterOptions = {
     excerpt: false,
 };
 
-args['--verbose'] && console.log(args['--pretty'] ? 'pretty:' : 'minify:', args['_']);
+args['--verbose'] && console.log(args['--pretty'] ? 'pretty:' : 'minify:', Array.from(new Set(args['_'])));
 
 // Markdown front matter
 if (args['--matter'] === 'toml') {
