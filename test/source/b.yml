@@ -1,0 +1,8 @@
+a: 'hello'
+
+wx:
+  hello: > 
+    "
+      hello
+      world
+    "
