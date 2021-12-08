@@ -52,9 +52,8 @@ const matterOptions = {
 };
 
 args['--verbose'] && console.log(args['--pretty'] ? 'pretty:' : 'minify:', args['_']);
-args['--verbose'] && console.log('output:', args['--out']);
 
-// 使用 TOML 解析 Front Matter
+// Markdown front matter
 if (args['--matter'] === 'toml') {
     Object.assign(matterOptions, {
         language: 'toml',
@@ -64,7 +63,15 @@ if (args['--matter'] === 'toml') {
     });
 }
 
-args['--verbose'] && console.log(`use ${(args['--matter'] === 'toml') ? 'TOML' : 'YAML'} parse markdown front matter`);
+args['--verbose'] && console.log(`use [${(args['--matter'] === 'toml') ? 'TOML' : 'YAML'}] parse markdown front matter`);
+
+// 输出数据序列化信息
+const format = args['--format'];
+const suffix = format ? (exts.includes(format.toLowerCase()) ? format.toLowerCase() : 'json') : 'json';
+args['--verbose'] && console.log(`use [${suffix.toUpperCase()}] render data`);
+
+// 输出目录
+args['--verbose'] && console.log('output:', args['--out']);
 
 /**
  * JSON 渲染
@@ -91,19 +98,25 @@ const render = (data) => {
  * @param {*} data 
  */
 const writeFile = (target, data) => {
+    // 当输出目标已存在时
     if (fs.existsSync(target)) {
         const stat = fs.lstatSync(target);
+        // 若输出目标是已存在的文件，则先删除
         if (stat.isFile()) {
             fs.rmSync(target);
-        } else if (stat.isDirectory()) {
-            throw new Error('output file must not directory');
+        } 
+        // 若输出目标是目录，则直接报错
+        else if (stat.isDirectory()) {
+            throw new Error('output file must not directory:' + target);
         }
     }
+    // 创建上一级目录
     const dirname = path.dirname(target);
     if (!fs.existsSync(dirname)) {
         args['--verbose'] && console.log('+-- make directory:', dirname);
         fs.mkdirSync(dirname, { recursive: true });
     }
+    // 将数据写入文件
     args['--verbose'] && console.log('+-- write file:', target);
     fs.writeFileSync(target, render(data));
 };
@@ -199,8 +212,6 @@ const processGroup = (group, processer) => {
 
 // 以原始文件组织输出
 if (args['--files']) {
-    const format = args['--format'];
-    const suffix = format ? (exts.includes(format.toLowerCase()) ? format.toLowerCase() : 'json') : 'json';
     new Set(args['_']).forEach(group => {
         processGroup(group, (parsed, unique) => {
             if (args['--out']) {
