@@ -3,6 +3,7 @@
 import fs from 'fs';
 import arg from 'arg';
 import path from 'path';
+import kindOf from 'kind-of';
 import YAML from 'js-yaml';
 import TOML from '@iarna/toml';
 import matter from 'gray-matter';
@@ -61,6 +62,7 @@ if (args['--matter'] === 'toml') {
     Object.assign(matterOptions, {
         language: 'toml',
         engines: {
+            // 指定 TOML 解析引擎
             toml: TOML.parse.bind(TOML),
         }
     });
@@ -202,13 +204,13 @@ const processGroup = (group, processer) => {
     if (fs.lstatSync(target).isDirectory()) {
         recursiveReaddirSync(target).forEach(filepath => {
             const unique = filepath.substr(process.cwd().length + 1);
-            processer && processer(parse(filepath, unique), unique);
+            kindOf(processer) === 'function' && processer(parse(filepath, unique), unique);
         });
     }
     // 处理文件
     else if (fs.lstatSync(target).isFile()) {
         const unique = target.substr(process.cwd().length + 1);
-        processer && processer(parse(target, unique), unique);
+        kindOf(processer) === 'function' && processer(parse(target, unique), unique);
     }
 
 };
