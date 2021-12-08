@@ -8,11 +8,13 @@
     "files2json": "./src/index.js"
   },
   "scripts": {
-    "test": "node src/index.js --matter=toml package.json test/source/ node_modules/ test/source --out test/target/a",
-    "test1": "node src/index.js --matter=toml package.json test/source/ node_modules/ test/source",
-    "test2": "node src/index.js -vp --matter=toml package.json test/source/ node_modules/ test/source --out test/target/c.json",
-    "test3": "node src/index.js -vp --files --matter=toml package.json test/source/ node_modules/ test/source --out test/target/d",
-    "test4": "node src/index.js -vp --files --matter=toml package.json test/source"
+    "test": "node src/index.js --matter=toml package.json test/source/ node_modules/ --out test/target/a",
+    "test1": "node src/index.js --matter=toml package.json test/source/ node_modules/",
+    "test2": "node src/index.js -vp --matter=toml package.json test/source/ node_modules/ --out test/target/c.json",
+    "test3": "node src/index.js -vp --files --matter=toml package.json test/source/ node_modules/ --out test/target/d",
+    "test4": "node src/index.js -vp --files --matter=toml package.json test/source",
+    "test5": "node src/index.js -vp --files --format=toml --matter=toml package.json test/source/ node_modules/ --out test/target/toml",
+    "test6": "node src/index.js -vp --files --format=yaml --matter=toml package.json test/source/ node_modules/ --out test/target/yaml"
   },
   "repository": {
     "type": "git",
@@ -33,6 +35,7 @@
   "dependencies": {
     "@iarna/toml": "^2.2.5",
     "arg": "^5.0.1",
+    "d3-dsv": "^3.0.1",
     "gray-matter": "^4.0.3",
     "parse-json": "^6.0.2",
     "recursive-readdir-sync": "^1.0.6",

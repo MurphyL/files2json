@@ -1,21 +1,26 @@
 #!/usr/bin/env node
 
-import TOML from '@iarna/toml';
-import arg from 'arg';
 import fs from 'fs';
-import matter from 'gray-matter';
-import YAML from 'js-yaml';
-import parseJSON from 'parse-json';
+import arg from 'arg';
 import path from 'path';
-import recursiveReaddirSync from 'recursive-readdir-sync';
+import YAML from 'js-yaml';
+import TOML from '@iarna/toml';
+import matter from 'gray-matter';
+import parseJSON from 'parse-json';
+import { csvParse, tsvParse } from 'd3-dsv';
 import stripBOM from 'strip-bom-string';
 import stripJSON from 'strip-json-comments';
+import recursiveReaddirSync from 'recursive-readdir-sync';
+import { exit } from 'process';
+
+const exts = ['toml', 'yml', 'yaml', 'json'];
 
 const args = arg({
     '--out': String,                // 指定输出位置
     '--help': Boolean,
     '--matter': String,             // 指定Markdown matter
     '--files': Boolean,             // 不合并文件
+    '--format': String,             // 文件输出格式：JSON、TOML、YAML
     '--pretty': Boolean,            // JSON 格式化后输出
     '--verbose': Boolean,           // 展示操作日志
     '--version': Boolean,
@@ -67,7 +72,17 @@ args['--verbose'] && console.log(`use ${(args['--matter'] === 'toml') ? 'TOML' :
  * @returns 
  */
 const render = (data) => {
-    return args['--pretty'] ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    const format = (args['--format'] || 'json').toLowerCase();
+    switch (format) {
+        case 'yml':
+        case 'yaml':
+            return YAML.dump(data);
+        case 'toml':
+            return TOML.stringify(data);
+        default:
+            return args['--pretty'] ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    }
+
 };
 
 /**
@@ -76,6 +91,14 @@ const render = (data) => {
  * @param {*} data 
  */
 const writeFile = (target, data) => {
+    if (fs.existsSync(target)) {
+        const stat = fs.lstatSync(target);
+        if (stat.isFile()) {
+            fs.rmSync(target);
+        } else if (stat.isDirectory()) {
+            throw new Error('output file must not directory');
+        }
+    }
     const dirname = path.dirname(target);
     if (!fs.existsSync(dirname)) {
         args['--verbose'] && console.log('+-- make directory:', dirname);
@@ -93,42 +116,56 @@ const writeFile = (target, data) => {
 const parse = (filepath, unique) => {
     const content = stripBOM(fs.readFileSync(filepath).toString() || '').trim();
     args['--verbose'] && console.log('+- processing:', unique);
-    switch (path.extname(filepath)) {
+    const meta = { __unique: unique, __timestamp: new Date() };
+    const ext = path.extname(filepath);
+    switch (ext) {
         case '.json':
             return {
+                ...meta,
                 __type: 'JSON',
-                __unique: unique,
-                content: parseJSON(stripJSON(content)),
+                __content: parseJSON(stripJSON(content)),
             };
         case '.md':
             const { data, content: body, excerpt, isEmpty, ...extra } = matter(content, matterOptions);
             return {
+                ...meta,
                 __type: 'Markdown',
-                __unique: unique,
-                content: {
+                __content: {
                     ...data,
                     ...extra,
                     body: body.trim()
                 },
             };
+        case '.csv':
+            return {
+                ...meta,
+                __type: 'CSV',
+                __content: csvParse(content),
+            };
+        case '.tsv':
+            return {
+                ...meta,
+                __type: 'TSV',
+                __content: tsvParse(content),
+            };
         case '.toml':
             return {
+                ...meta,
                 __type: 'TOML',
-                __unique: unique,
-                content: TOML.parse(content),
+                __content: TOML.parse(content),
             };
         case '.yml':
         case '.yaml':
             return {
+                ...meta,
                 __type: 'YAML',
-                __unique: unique,
-                content: YAML.load(content),
+                __content: YAML.load(content),
             };
         default:
             return {
-                __type: 'other',
-                __unique: unique,
-                content: content,
+                ...meta,
+                __type: ext,
+                __content: content,
             };
     }
 };
@@ -142,7 +179,7 @@ const parse = (filepath, unique) => {
 const processGroup = (group, processer) => {
     const target = path.resolve(process.cwd(), group);
     if (!fs.existsSync(target)) {
-        throw new Error('Path not exists:', target);
+        throw new Error('Path not exists:' + target);
     }
     args['--verbose'] && console.log('+ group:', group);
     // 处理目录
@@ -162,11 +199,13 @@ const processGroup = (group, processer) => {
 
 // 以原始文件组织输出
 if (args['--files']) {
-    args['_'].forEach(group => {
+    const format = args['--format'];
+    const suffix = format ? (exts.includes(format.toLowerCase()) ? format.toLowerCase() : 'json') : 'json';
+    new Set(args['_']).forEach(group => {
         processGroup(group, (parsed, unique) => {
             if (args['--out']) {
                 const { dir, name } = path.parse(unique);
-                writeFile(path.resolve(process.cwd(), args['--out'], dir, `${name}.json`), parsed);
+                writeFile(path.resolve(process.cwd(), args['--out'], dir, `${name}.${suffix}`), parsed);
             } else {
                 console.log(render(parsed));
             }
@@ -176,7 +215,7 @@ if (args['--files']) {
 // 将结果输出到单一文件
 else {
     const reuslt = {};
-    args['_'].forEach(group => {
+    new Set(args['_']).forEach(group => {
         processGroup(group, (parsed) => {
             if (!reuslt[group]) {
                 reuslt[group] = [];
