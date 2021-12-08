@@ -1,6 +1,6 @@
 # files2json
 
-CLI program that reads json/markdown/toml/yaml and prints it as JSON.
+CLI program that reads json/csv/tsv/markdown/toml/yaml and prints it as JSON.
 
 > files2json [...options] [...paths]
 
