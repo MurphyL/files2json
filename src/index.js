@@ -203,13 +203,14 @@ const processGroup = (group, processer) => {
     // 处理目录
     if (fs.lstatSync(target).isDirectory()) {
         recursiveReaddirSync(target).forEach(filepath => {
-            const unique = filepath.substr(process.cwd().length + 1);
+            const unique = path.relative(process.cwd(), filepath);
             kindOf(processer) === 'function' && processer(parse(filepath, unique), unique);
         });
     }
     // 处理文件
     else if (fs.lstatSync(target).isFile()) {
-        const unique = target.substr(process.cwd().length + 1);
+        // const unique = target.substr(process.cwd().length + 1);
+        const unique = path.relative(process.cwd(), target);
         kindOf(processer) === 'function' && processer(parse(target, unique), unique);
     }
 

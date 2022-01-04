@@ -1,6 +1,6 @@
 {
   "name": "@murphyl/files2json",
-  "version": "1.2.0",
+  "version": "1.2.3",
   "description": "CLI program that reads json/markdown/toml/yaml and prints it as JSON.",
   "main": "src/index.js",
   "type": "module",
